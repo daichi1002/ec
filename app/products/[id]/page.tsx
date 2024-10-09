@@ -1,4 +1,3 @@
-"use client";
 import { Button } from "@/components/ui/button";
 import {
   Carousel,
@@ -7,24 +6,27 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { useState } from "react";
 
-export default function ProductDetail() {
-  const [quantity, setQuantity] = useState(1);
+async function getProduct(id: number) {
+  const product = await prisma.products.findUnique({
+    where: { id: id },
+  });
+  return product;
+}
 
-  const product = {
-    name: "アイネクライネナハドムジーク・大人は泣かないと思っていた",
-    price: 650,
-    details:
-      "伝説の名作「アイネクライネナハトムジーク」と新作「大人は泣かないと思っていた」を収録した特別版。著者の深い洞察と心温まるストーリーテリングが詰まった一冊です。",
-    images: ["/book.JPG", "/dog.png", "/lunch_box1.JPG"],
-  };
+export default async function ProductDetail({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const id = parseInt(params.id);
+  const product = await getProduct(id);
 
-  const handleAddToCart = () => {
-    console.log(`Added ${quantity} of ${product.name} to cart`);
-    // Here you would typically update the cart state or send a request to your backend
-  };
+  if (!product) {
+    return <div>商品が見つかりません。</div>;
+  }
 
   return (
     <div className="container mx-auto py-12 px-6">
@@ -61,7 +63,9 @@ export default function ProductDetail() {
           </p>
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-2">商品詳細</h2>
-            <ul className="list-disc list-inside">{product.details}</ul>
+            {product.detail?.split("\n").map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
           </div>
           <div className="flex items-center gap-4 mb-6">
             <label htmlFor="quantity" className="font-medium">
@@ -71,15 +75,11 @@ export default function ProductDetail() {
               type="number"
               id="quantity"
               min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value))}
+              defaultValue={1}
               className="border rounded px-2 py-1 w-16 text-center"
             />
           </div>
-          <Button
-            onClick={handleAddToCart}
-            className="w-full bg-custom-beige text-black font-semibold py-2 px-4 rounded transition duration-300 ease-in-out hover:bg-custom-beige-dark focus:outline-none focus:ring-2 focus:ring-custom-beige focus:ring-opacity-50"
-          >
+          <Button className="w-full bg-custom-beige text-black font-semibold py-2 px-4 rounded transition duration-300 ease-in-out hover:bg-custom-beige-dark focus:outline-none focus:ring-2 focus:ring-custom-beige focus:ring-opacity-50">
             カートに追加
           </Button>
         </div>

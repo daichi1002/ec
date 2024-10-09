@@ -6,7 +6,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 bg-[#f5f5dc] border-b">
       <div className="container mx-auto py-4 px-6 flex items-center justify-between">
         <Link
-          href="#"
+          href="/"
           className="flex items-center gap-2 text-2xl font-bold"
           prefetch={false}
         >
