@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import AddToCartButton from "@/components/AddToCartButton";
 import {
   Carousel,
   CarouselContent,
@@ -67,21 +67,7 @@ export default async function ProductDetail({
               <p key={index}>{line}</p>
             ))}
           </div>
-          <div className="flex items-center gap-4 mb-6">
-            <label htmlFor="quantity" className="font-medium">
-              数量:
-            </label>
-            <input
-              type="number"
-              id="quantity"
-              min="1"
-              defaultValue={1}
-              className="border rounded px-2 py-1 w-16 text-center"
-            />
-          </div>
-          <Button className="w-full bg-custom-beige text-black font-semibold py-2 px-4 rounded transition duration-300 ease-in-out hover:bg-custom-beige-dark focus:outline-none focus:ring-2 focus:ring-custom-beige focus:ring-opacity-50">
-            カートに追加
-          </Button>
+          <AddToCartButton product={product} />
         </div>
       </div>
     </div>

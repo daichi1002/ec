@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,66 +10,30 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/useCart";
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
-// カート内の商品の型定義
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-const CartPage: React.FC = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+const CartPage = () => {
+  const { cart, removeFromCart } = useCart();
+  const { toast } = useToast();
   const [total, setTotal] = useState(0);
-
-  // カートの内容を取得（実際にはローカルストレージやAPIから取得します）
-  useEffect(() => {
-    // ダミーデータを使用
-    const dummyCartItems: CartItem[] = [
-      {
-        id: 1,
-        name: "商品A",
-        price: 1000,
-        quantity: 2,
-        image: "/api/placeholder/100/100",
-      },
-      {
-        id: 2,
-        name: "商品B",
-        price: 1500,
-        quantity: 1,
-        image: "/api/placeholder/100/100",
-      },
-    ];
-    setCartItems(dummyCartItems);
-  }, []);
 
   // 合計金額を計算
   useEffect(() => {
-    const newTotal = cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    const newTotal = cart.reduce((sum, item) => sum + item.price, 0);
     setTotal(newTotal);
-  }, [cartItems]);
+  }, [cart]);
 
-  // 数量を更新
-  const updateQuantity = (id: number, newQuantity: number) => {
-    setCartItems(
-      cartItems.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  // 商品を削除
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id));
+  // 商品をカートから削除した時にtoastで通知
+  const handleRemoveFromCart = (itemId: number, itemName: string) => {
+    removeFromCart(itemId);
+    toast({
+      title: "商品がカートから削除されました",
+      description: `${itemName} をカートから削除しました。`,
+    });
   };
 
   // 決済処理（ダミー）
@@ -80,12 +45,17 @@ const CartPage: React.FC = () => {
   return (
     <div className="container mx-auto py-12 px-6">
       <h1 className="text-xl font-bold mb-6">カートに入っている商品</h1>
-      {cartItems.length === 0 ? (
-        <p>カートは空です。</p>
+      {cart.length === 0 ? (
+        <div>
+          <p>カートは空です。</p>
+          <Link href="/" className="text-sm text-gray-600 hover:underline">
+            &larr; ショッピングに戻る
+          </Link>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
-            {cartItems.map((item) => (
+            {cart.map((item) => (
               <Card key={item.id} className="mb-4">
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-4">
@@ -96,35 +66,18 @@ const CartPage: React.FC = () => {
                     />
                     <div className="flex-grow">
                       <h3 className="text-lg font-semibold">{item.name}</h3>
-                      <p className="text-sm text-gray-600">
-                        ¥{item.price.toLocaleString()}
-                      </p>
-                      <div className="flex items-center mt-2">
-                        <Label htmlFor={`quantity-${item.id}`} className="mr-2">
-                          数量:
-                        </Label>
-                        <Input
-                          type="number"
-                          id={`quantity-${item.id}`}
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateQuantity(item.id, parseInt(e.target.value))
-                          }
-                          min="1"
-                          className="w-20"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(item.id)}
-                          className="ml-4"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <p className="text-sm text-gray-600 mt-2">数量: 1</p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveFromCart(item.id, item.name)}
+                      className="ml-4"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                     <p className="text-lg font-semibold">
-                      ¥{(item.price * item.quantity).toLocaleString()}
+                      ¥{item.price.toLocaleString()}
                     </p>
                   </div>
                 </CardContent>
