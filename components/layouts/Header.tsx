@@ -18,7 +18,7 @@ export const Header = () => {
             <SearchIcon className="w-6 h-6" />
             <span className="sr-only">Search</span>
           </Link>
-          <Link href="#" className="hover:text-primary" prefetch={false}>
+          <Link href="/cart" className="hover:text-primary" prefetch={false}>
             <ShoppingCartIcon className="w-6 h-6" />
             <span className="sr-only">Cart</span>
           </Link>
