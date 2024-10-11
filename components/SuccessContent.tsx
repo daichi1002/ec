@@ -23,11 +23,11 @@ export default function SuccessPage() {
   );
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
-  const { cart, clearCart } = useCart();
-  const totalPrice = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const { clearCart } = useCart();
+  //   const totalPrice = cart.reduce(
+  //     (sum, item) => sum + item.price * item.quantity,
+  //     0
+  //   );
 
   useEffect(() => {
     if (sessionId) {
