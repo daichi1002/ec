@@ -11,7 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AlertTriangle, Check, RefreshCcw, ShoppingBag } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
+import { AlertTriangle, Check, RefreshCcw } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -21,12 +23,18 @@ export default function SuccessPage() {
   );
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const { cart, clearCart } = useCart();
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   useEffect(() => {
     if (sessionId) {
       // ここで必要に応じてバックエンドAPIを呼び出し、注文の詳細を取得したり
       // データベースを更新したりします。
       // この例では、単純にステータスを'success'に設定しています。
+      clearCart();
       setStatus("success");
     } else {
       setStatus("error");
@@ -64,10 +72,10 @@ export default function SuccessPage() {
                   注文日: {new Date().toISOString()}
                 </p>
               </div>
-              <div className="border-t border-gray-200 pt-4">
+              {/* <div className="border-t border-gray-200 pt-4">
                 <h3 className="font-semibold mb-2">注文内容</h3>
-                {/* <ul className="space-y-2">
-                  {items?.map((item, index) => (
+                <ul className="space-y-2">
+                  {cart?.map((item, index) => (
                     <li key={index} className="flex justify-between">
                       <span>{item.name}</span>
                       <span>¥{item.price.toLocaleString()}</span>
@@ -75,10 +83,10 @@ export default function SuccessPage() {
                   ))}
                   <li className="flex justify-between font-semibold">
                     <span>合計</span>
-                    <span>¥{total?.toLocaleString()}</span>
+                    <span>¥{totalPrice?.toLocaleString()}</span>
                   </li>
-                </ul> */}
-              </div>
+                </ul>
+              </div> */}
             </>
           ) : (
             <Alert variant="destructive">
@@ -92,9 +100,9 @@ export default function SuccessPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
           {isSuccess ? (
-            <Button className="w-full">
-              <ShoppingBag className="mr-2 h-4 w-4" /> 買い物を続ける
-            </Button>
+            <Link href="/" className="text-sm text-gray-600 hover:underline">
+              &larr; ショッピングに戻る
+            </Link>
           ) : (
             <Button className="w-full" variant="outline">
               <RefreshCcw className="mr-2 h-4 w-4" /> 決済をやり直す
