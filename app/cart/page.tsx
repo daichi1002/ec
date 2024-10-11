@@ -1,3 +1,4 @@
+// components/CartPage.tsx
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -12,22 +13,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
+import { loadStripe } from "@stripe/stripe-js";
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
 const CartPage = () => {
   const { cart, removeFromCart } = useCart();
   const { toast } = useToast();
   const [total, setTotal] = useState(0);
+  const [email, setEmail] = useState("");
 
-  // 合計金額を計算
   useEffect(() => {
-    const newTotal = cart.reduce((sum, item) => sum + item.price, 0);
+    const newTotal = cart.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
     setTotal(newTotal);
   }, [cart]);
 
-  // 商品をカートから削除した時にtoastで通知
   const handleRemoveFromCart = (itemId: number, itemName: string) => {
     removeFromCart(itemId);
     toast({
@@ -36,10 +42,62 @@ const CartPage = () => {
     });
   };
 
-  // 決済処理（ダミー）
-  const handleCheckout = (event: React.FormEvent) => {
+  const handleCheckout = async (event: React.FormEvent) => {
     event.preventDefault();
-    alert("決済処理が完了しました！（デモ用）");
+
+    const stripe = await stripePromise;
+
+    if (!stripe) {
+      toast({
+        title: "エラー",
+        description: "Stripeの読み込みに失敗しました。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: cart.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          email: email,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const { sessionId, lineItems } = await response.json();
+
+      const result = await stripe.redirectToCheckout({
+        sessionId: sessionId,
+        lineItems: lineItems,
+      });
+
+      if (result.error) {
+        toast({
+          title: "エラー",
+          description: result.error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "エラー",
+        description: "決済処理中にエラーが発生しました。",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -66,7 +124,9 @@ const CartPage = () => {
                     />
                     <div className="flex-grow">
                       <h3 className="text-lg font-semibold">{item.name}</h3>
-                      <p className="text-sm text-gray-600 mt-2">数量: 1</p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        数量: {item.quantity}
+                      </p>
                     </div>
                     <Button
                       variant="ghost"
@@ -77,7 +137,7 @@ const CartPage = () => {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                     <p className="text-lg font-semibold">
-                      ¥{item.price.toLocaleString()}
+                      ¥{(item.price * item.quantity).toLocaleString()}
                     </p>
                   </div>
                 </CardContent>
@@ -96,20 +156,14 @@ const CartPage = () => {
                 <form onSubmit={handleCheckout}>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="name">お名前</Label>
-                      <Input id="name" required />
-                    </div>
-                    <div>
                       <Label htmlFor="email">メールアドレス</Label>
-                      <Input id="email" type="email" required />
-                    </div>
-                    <div>
-                      <Label htmlFor="address">住所</Label>
-                      <Input id="address" required />
-                    </div>
-                    <div>
-                      <Label htmlFor="card">クレジットカード番号</Label>
-                      <Input id="card" required />
+                      <Input
+                        id="email"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
                     </div>
                   </div>
                   <Button type="submit" className="w-full mt-6">
