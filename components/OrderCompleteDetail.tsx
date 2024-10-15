@@ -17,7 +17,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function SuccessPage() {
+export default function OrderCompleteDetail() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
   );
