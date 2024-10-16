@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loadStripe } from "@stripe/stripe-js";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -38,7 +38,7 @@ const formSchema = z.object({
 });
 
 const CartPage = () => {
-  const { cart, removeFromCart, updateQuantity } = useCart();
+  const { cart, removeFromCart } = useCart();
   const { toast } = useToast();
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,12 +68,6 @@ const CartPage = () => {
       title: "商品がカートから削除されました",
       description: `${itemName} をカートから削除しました。`,
     });
-  };
-
-  const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
-    if (newQuantity > 0) {
-      updateQuantity(itemId, newQuantity);
-    }
   };
 
   const handleCheckout = async (values: z.infer<typeof formSchema>) => {
@@ -154,7 +148,7 @@ const CartPage = () => {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
             {cart.map((item) => (
               <Card key={item.id} className="mb-4">
@@ -167,45 +161,26 @@ const CartPage = () => {
                     />
                     <div className="flex-grow">
                       <h3 className="text-lg font-semibold">{item.name}</h3>
-                      <div className="flex items-center mt-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity - 1)
-                          }
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="mx-2">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity + 1)
-                          }
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <p className="text-sm text-gray-600 mt-2">
+                        数量: {item.quantity}
+                      </p>
+                      <p className="text-lg font-semibold mt-2">
+                        ¥{(item.price * item.quantity).toLocaleString()}
+                      </p>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveFromCart(item.id, item.name)}
-                      className="ml-4"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                    <p className="text-lg font-semibold">
-                      ¥{(item.price * item.quantity).toLocaleString()}
-                    </p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-          <div>
+          <div className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>支払い金額</CardTitle>
@@ -223,9 +198,6 @@ const CartPage = () => {
                 <CardTitle>お届け先情報</CardTitle>
               </CardHeader>
               <CardContent>
-                {/* <p className="text-lg font-semibold mb-4">
-                  合計: ¥{total.toLocaleString()}(送料込)
-                </p> */}
                 <form onSubmit={form.handleSubmit(handleCheckout)}>
                   <div className="space-y-4">
                     <div>
