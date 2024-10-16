@@ -13,18 +13,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { loadStripe } from "@stripe/stripe-js";
-import { Trash2 } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
+const formSchema = z.object({
+  email: z
+    .string()
+    .email({ message: "有効なメールアドレスを入力してください。" }),
+  name: z.string().min(2, { message: "名前は2文字以上で入力してください。" }),
+  address: z
+    .string()
+    .min(5, { message: "住所は5文字以上で入力してください。" }),
+  city: z.string().min(2, { message: "市区町村を入力してください。" }),
+  postalCode: z
+    .string()
+    .regex(/^\d{3}-?\d{4}$/, { message: "正しい郵便番号を入力してください。" }),
+});
+
 const CartPage = () => {
-  const { cart, removeFromCart } = useCart();
+  const { cart, removeFromCart, updateQuantity } = useCart();
   const { toast } = useToast();
   const [total, setTotal] = useState(0);
-  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      name: "",
+      address: "",
+      city: "",
+      postalCode: "",
+    },
+  });
 
   useEffect(() => {
     const newTotal = cart.reduce(
@@ -42,9 +70,14 @@ const CartPage = () => {
     });
   };
 
-  const handleCheckout = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
+    if (newQuantity > 0) {
+      updateQuantity(itemId, newQuantity);
+    }
+  };
 
+  const handleCheckout = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     const stripe = await stripePromise;
 
     if (!stripe) {
@@ -53,11 +86,12 @@ const CartPage = () => {
         description: "Stripeの読み込みに失敗しました。",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch("/api/create-checkout-session", {
+      const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,9 +100,17 @@ const CartPage = () => {
           items: cart.map((item) => ({
             id: item.id,
             quantity: item.quantity,
-            price: item.price,
           })),
-          email: email,
+          customer: {
+            email: values.email,
+            name: values.name,
+            address: {
+              line1: values.address,
+              city: values.city,
+              postal_code: values.postalCode,
+              country: "JP",
+            },
+          },
         }),
       });
 
@@ -76,11 +118,10 @@ const CartPage = () => {
         throw new Error("Network response was not ok");
       }
 
-      const { sessionId, lineItems } = await response.json();
+      const { sessionId } = await response.json();
 
       const result = await stripe.redirectToCheckout({
         sessionId: sessionId,
-        lineItems: lineItems,
       });
 
       if (result.error) {
@@ -97,6 +138,8 @@ const CartPage = () => {
         description: "決済処理中にエラーが発生しました。",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -124,9 +167,27 @@ const CartPage = () => {
                     />
                     <div className="flex-grow">
                       <h3 className="text-lg font-semibold">{item.name}</h3>
-                      <p className="text-sm text-gray-600 mt-2">
-                        数量: {item.quantity}
-                      </p>
+                      <div className="flex items-center mt-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() =>
+                            handleUpdateQuantity(item.id, item.quantity - 1)
+                          }
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="mx-2">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() =>
+                            handleUpdateQuantity(item.id, item.quantity + 1)
+                          }
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -147,27 +208,90 @@ const CartPage = () => {
           <div>
             <Card>
               <CardHeader>
-                <CardTitle>注文サマリー</CardTitle>
+                <CardTitle>支払い金額</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-lg font-semibold mb-4">
                   合計: ¥{total.toLocaleString()}
                 </p>
-                <form onSubmit={handleCheckout}>
+              </CardContent>
+            </Card>
+          </div>
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>お届け先情報</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* <p className="text-lg font-semibold mb-4">
+                  合計: ¥{total.toLocaleString()}(送料込)
+                </p> */}
+                <form onSubmit={form.handleSubmit(handleCheckout)}>
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="email">メールアドレス</Label>
                       <Input
                         id="email"
                         type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        {...form.register("email")}
                       />
+                      {form.formState.errors.email && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.email.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="name">お名前</Label>
+                      <Input id="name" type="text" {...form.register("name")} />
+                      {form.formState.errors.name && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.name.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="postalCode">郵便番号</Label>
+                      <Input
+                        id="postalCode"
+                        type="text"
+                        {...form.register("postalCode")}
+                      />
+                      {form.formState.errors.postalCode && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.postalCode.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="city">市区町村</Label>
+                      <Input id="city" type="text" {...form.register("city")} />
+                      {form.formState.errors.city && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.city.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="address">住所</Label>
+                      <Input
+                        id="address"
+                        type="text"
+                        {...form.register("address")}
+                      />
+                      {form.formState.errors.address && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.address.message}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <Button type="submit" className="w-full mt-6">
-                    決済する
+                  <Button
+                    type="submit"
+                    className="w-full mt-6"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "処理中..." : "支払い情報の入力"}
                   </Button>
                 </form>
               </CardContent>

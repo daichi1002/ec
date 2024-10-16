@@ -31,7 +31,7 @@ export default async function ProductDetail({
   return (
     <div className="container mx-auto py-12 px-6">
       <Link href="/" className="text-primary hover:underline mb-6 inline-block">
-        &larr; Back to Home
+        &larr; ホームへ戻る
       </Link>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         <Carousel className="w-full">

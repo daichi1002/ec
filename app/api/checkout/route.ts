@@ -1,4 +1,3 @@
-// pages/api/create-checkout-session.ts
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -40,9 +39,10 @@ export async function POST(request: Request) {
       mode: "payment",
       success_url: `${request.headers.get(
         "origin"
-      )}/success?session_id={CHECKOUT_SESSION_ID}`,
+      )}/order-complete?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.headers.get("origin")}/cart`,
       customer_email: email,
+      locale: "ja",
     });
 
     // TODO
