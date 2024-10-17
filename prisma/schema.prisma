@@ -15,11 +15,68 @@ datasource db {
 }
 
 model products {
-  id        Int       @id @default(autoincrement())
-  name      String
-  price     Int
-  detail    String?
-  images    String[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime?
+  id          Int           @id @default(autoincrement())
+  name        String
+  price       Int
+  detail      String?
+  images      String[]
+  created_at  DateTime      @default(now())
+  updated_at  DateTime?
+  order_items order_items[]
+}
+
+model users {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  password    String
+  name        String
+  postal_code String
+  address     String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  orders      orders[]
+}
+
+model orders {
+  id           Int           @id @default(autoincrement())
+  user_id      Int
+  user         users         @relation(fields: [user_id], references: [id])
+  status       order_status
+  total_amount Decimal       @db.Decimal(10, 2)
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  order_items  order_items[]
+}
+
+model order_items {
+  id         Int      @id @default(autoincrement())
+  order_id   Int
+  order      orders   @relation(fields: [order_id], references: [id])
+  product_id Int
+  product    products @relation(fields: [product_id], references: [id])
+  quantity   Int
+  price      Decimal  @db.Decimal(10, 2)
+}
+
+model postal_codes {
+  postal_code String      @id
+  prefecture  String
+  city        String
+  town        String
+  addresses   addresses[]
+}
+
+model addresses {
+  id             Int          @id @default(autoincrement())
+  postal_code_id String
+  postal_code    postal_codes @relation(fields: [postal_code_id], references: [postal_code])
+  street         String
+  building       String?
+}
+
+enum order_status {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
 }
