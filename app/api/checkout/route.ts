@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
-    const { items, email } = await request.json();
+    const { items, customer } = await request.json();
 
     // Retrieve items from the database
     const lineItems = await Promise.all(
@@ -32,6 +32,11 @@ export async function POST(request: Request) {
       })
     );
 
+    const totalAmount = lineItems.reduce(
+      (sum, item) => sum + item.price_data.unit_amount * item.quantity,
+      0
+    );
+
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -41,12 +46,31 @@ export async function POST(request: Request) {
         "origin"
       )}/order-complete?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.headers.get("origin")}/cart`,
-      customer_email: email,
+      customer_email: customer.email,
       locale: "ja",
+      shipping_address_collection: {
+        allowed_countries: ["JP"],
+      },
+      metadata: {
+        customer_name: customer.name,
+        customer_address: `${customer.address.line1}, ${customer.address.city}, ${customer.address.postalCode}`,
+      },
     });
+    // Create pending order in database
+    // await prisma.orders.create({
+    //   data: {
+    //     status: "PENDING",
+    //     totalAmount,
+    //     orderItems: {
+    //       create: items.map((item: { id: number; quantity: number }) => ({
+    //         productId: item.id,
+    //         quantity: item.quantity,
+    //       })),
+    //     },
+    //   },
+    // });
 
     // TODO
-    //在庫管理: 決済が成功した後、バックエンドで在庫を更新する処理を追加することを検討してください。
     // 注文確認メール: 決済成功後に、ユーザーに注文確認メールを送信する機能を追加するのも良いでしょう。
     return NextResponse.json({ sessionId: session.id });
   } catch (err) {
