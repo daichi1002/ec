@@ -28,6 +28,7 @@ const formSchema = z.object({
     .string()
     .email({ message: "有効なメールアドレスを入力してください。" }),
   name: z.string().min(2, { message: "名前は2文字以上で入力してください。" }),
+  prefectures: z.string().min(2, { message: "都道府県を入力してください。" }),
   address: z
     .string()
     .min(5, { message: "住所は5文字以上で入力してください。" }),
@@ -35,6 +36,7 @@ const formSchema = z.object({
   postalCode: z
     .string()
     .regex(/^\d{3}-?\d{4}$/, { message: "正しい郵便番号を入力してください。" }),
+  phoneNumber: z.string().min(2, { message: "電話番号を入力してください。" }),
 });
 
 const CartPage = () => {
@@ -48,9 +50,11 @@ const CartPage = () => {
     defaultValues: {
       email: "",
       name: "",
+      prefectures: "",
       address: "",
       city: "",
       postalCode: "",
+      phoneNumber: "",
     },
   });
 
@@ -236,6 +240,19 @@ const CartPage = () => {
                       )}
                     </div>
                     <div>
+                      <Label htmlFor="prefectures">都道府県</Label>
+                      <Input
+                        id="prefectures"
+                        type="text"
+                        {...form.register("prefectures")}
+                      />
+                      {form.formState.errors.prefectures && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.prefectures.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
                       <Label htmlFor="city">市区町村</Label>
                       <Input id="city" type="text" {...form.register("city")} />
                       {form.formState.errors.city && (
@@ -245,7 +262,7 @@ const CartPage = () => {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="address">住所</Label>
+                      <Label htmlFor="address">番地・建物名・部屋番号</Label>
                       <Input
                         id="address"
                         type="text"
@@ -254,6 +271,19 @@ const CartPage = () => {
                       {form.formState.errors.address && (
                         <p className="text-sm text-red-500 mt-1">
                           {form.formState.errors.address.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="phoneNumber">電話番号</Label>
+                      <Input
+                        id="phoneNumber"
+                        type="text"
+                        {...form.register("phoneNumber")}
+                      />
+                      {form.formState.errors.phoneNumber && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.phoneNumber.message}
                         </p>
                       )}
                     </div>
