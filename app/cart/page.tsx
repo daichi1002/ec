@@ -28,8 +28,8 @@ const formSchema = z.object({
     .string()
     .email({ message: "有効なメールアドレスを入力してください。" }),
   name: z.string().min(2, { message: "名前は2文字以上で入力してください。" }),
-  prefectures: z.string().min(2, { message: "都道府県を入力してください。" }),
-  address: z
+  prefecture: z.string().min(2, { message: "都道府県を入力してください。" }),
+  building: z
     .string()
     .min(5, { message: "住所は5文字以上で入力してください。" }),
   city: z.string().min(2, { message: "市区町村を入力してください。" }),
@@ -50,8 +50,8 @@ const CartPage = () => {
     defaultValues: {
       email: "",
       name: "",
-      prefectures: "",
-      address: "",
+      prefecture: "",
+      building: "",
       city: "",
       postalCode: "",
       phoneNumber: "",
@@ -97,17 +97,20 @@ const CartPage = () => {
         body: JSON.stringify({
           items: cart.map((item) => ({
             id: item.id,
+            name: item.name,
+            price: item.price,
+            image: item.image,
             quantity: item.quantity,
           })),
           customer: {
             email: values.email,
             name: values.name,
-            address: {
-              line1: values.address,
-              city: values.city,
-              postal_code: values.postalCode,
-              country: "JP",
-            },
+            phoneNumber: values.phoneNumber,
+            postal_code: values.postalCode,
+            prefecture: values.prefecture,
+            city: values.city,
+            building: values.building,
+            country: "JP",
           },
         }),
       });
@@ -240,15 +243,15 @@ const CartPage = () => {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="prefectures">都道府県</Label>
+                      <Label htmlFor="prefecture">都道府県</Label>
                       <Input
-                        id="prefectures"
+                        id="prefecture"
                         type="text"
-                        {...form.register("prefectures")}
+                        {...form.register("prefecture")}
                       />
-                      {form.formState.errors.prefectures && (
+                      {form.formState.errors.prefecture && (
                         <p className="text-sm text-red-500 mt-1">
-                          {form.formState.errors.prefectures.message}
+                          {form.formState.errors.prefecture.message}
                         </p>
                       )}
                     </div>
@@ -266,11 +269,11 @@ const CartPage = () => {
                       <Input
                         id="address"
                         type="text"
-                        {...form.register("address")}
+                        {...form.register("building")}
                       />
-                      {form.formState.errors.address && (
+                      {form.formState.errors.building && (
                         <p className="text-sm text-red-500 mt-1">
-                          {form.formState.errors.address.message}
+                          {form.formState.errors.building.message}
                         </p>
                       )}
                     </div>
