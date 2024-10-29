@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     );
 
     const totalAmount = lineItems.reduce(
-      (sum, item) => sum + item.price_data.unit_amount * item.quantity,
+      (sum, item) => sum + item.price * item.quantity,
       0
     );
 
@@ -48,13 +48,6 @@ export async function POST(request: Request) {
       cancel_url: `${request.headers.get("origin")}/cart`,
       customer_email: customer.email,
       locale: "ja",
-      shipping_address_collection: {
-        allowed_countries: ["JP"],
-      },
-      metadata: {
-        customer_name: customer.name,
-        customer_address: `${customer.address.line1}, ${customer.address.city}, ${customer.address.postalCode}`,
-      },
     });
     // Create pending order in database
     // await prisma.orders.create({
